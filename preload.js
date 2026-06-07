@@ -28,6 +28,9 @@ contextBridge.exposeInMainWorld('q9', {
   server: {
     info: (payload) => ipcRenderer.invoke('server:info', payload),
   },
+  bot: {
+    me: (payload) => ipcRenderer.invoke('bot:me', payload),
+  },
   channels: {
     list: (payload) => ipcRenderer.invoke('channels:list', payload),
   },
