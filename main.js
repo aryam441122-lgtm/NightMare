@@ -423,7 +423,7 @@ ipcMain.handle('user:profile', async (_e, { token, userId, serverId }) => {
   const gm = r.json.guild_member || null;
   const avatar = u.avatar
     ? `https://cdn.discordapp.com/avatars/${u.id}/${u.avatar}.${u.avatar.startsWith('a_') ? 'gif' : 'png'}?size=256`
-    : `https://cdn.discordapp.com/embed/avatars/${(parseInt(u.discriminator || '0') % 5)}.png`;
+    : `https://cdn.discordapp.com/embed/avatars/${u.id ? Number((BigInt(u.id) >> 22n) % 6n) : (parseInt(u.discriminator || '0') % 5)}.png`;
   const banner = u.banner
     ? `https://cdn.discordapp.com/banners/${u.id}/${u.banner}.${u.banner.startsWith('a_') ? 'gif' : 'png'}?size=600`
     : null;
@@ -922,6 +922,28 @@ function createWindow() {
   win.loadURL(APP_URL);
   presenceWindow = win;
 }
+
+// ---------- IPC: Bot user info (avatar, name, online check) ----------
+ipcMain.handle('bot:me', async (_e, { token }) => {
+  if (!token) return { ok: false, reason: 'no-token' };
+  const r = await httpRequest('GET', 'https://discord.com/api/v9/users/@me', {
+    'Authorization': `Bot ${token}`,
+    'User-Agent': 'DiscordBot (https://sf1.local, 1.0)',
+  });
+  if (r.status !== 200 || !r.json) return { ok: false, status: r.status };
+  const u = r.json;
+  const avatar = u.avatar
+    ? `https://cdn.discordapp.com/avatars/${u.id}/${u.avatar}.${u.avatar.startsWith('a_') ? 'gif' : 'png'}?size=128`
+    : `https://cdn.discordapp.com/embed/avatars/${(BigInt(u.id) >> 22n) % 6n}.png`;
+  return {
+    ok: true,
+    id: u.id,
+    username: u.username,
+    global_name: u.global_name || u.username,
+    discriminator: u.discriminator,
+    avatar,
+  };
+});
 
 app.whenReady().then(() => {
   createWindow();
